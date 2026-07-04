@@ -1,0 +1,1364 @@
+/*
+    * Satisfaction - Harness the Model–View–ViewModel pattern to build scalable, maintainable, and modular web applications.
+    * Designed with simplicity, reusability, and performance in mind.
+    * Repository: https://github.com/kirakito-projects/SatisfactionJS
+    * Copyright © 2026 Kirakito Technologies, Inc. Public version. MIT License.
+*/
+
+/*
+    DEPARTMENT -> GENERAL CONSTANTS
+*/
+
+const SF_PUBLIC_VERSION = "2.1.2.1229";
+
+
+/*
+    DEPARTMENT -> COMMON VARIABLES
+*/
+
+var sf_component_javascript_allowed = true;
+var sf_component_javascript_builtin = true;
+var sf_component_style_add_new_class = true;
+var sf_component_lazy_loading_allowed = true;
+var sf_component_loading_indicator = null;
+var sf_component_templates = new Object();
+var sf_component_navigation_stack = [];
+var sf_component_cache_control_header = "no-cache, no-store, max-age=0";
+
+var sf_routing_allowed = false;
+
+var sf_active_navigation_allowed = false;
+
+var sf_disable_pop_state = false;
+
+var sf_model_multiplier_default_functions_allowed = true;
+
+var sf_point_shared_objects = new Object();
+
+var sf_state_ls_prefix = 'sf_';
+var sf_states = new Object();
+
+var sf_resource_allowed = true;
+var sf_resource_content = new Object();
+var sf_resource_undefined_key_value = '';
+var sf_resource_callback_after = null;
+var sf_resource_cache_control_header = "no-cache, no-store, max-age=0";
+
+var sf_event_prefix = 'sf';
+
+var sf_dependency_stable_version = null;
+
+
+/*
+    DEPARTMENT -> FRAMEWORK DEFAULTS
+*/
+
+/**
+ * Initialize and prepare to use framework dependencies
+ * @return {void}
+ */
+function sf_initialize(callbackSetup = null) {
+    sf_routing_allowed = document.body.hasAttribute("allow-routing");
+
+    if(callbackSetup) {
+        callbackSetup();
+    }
+
+    if(sf_resource_allowed) {
+        sf_resource_load_all(sf_component_setup);
+    } else {
+        sf_component_setup();
+    }
+
+    window.addEventListener('popstate', (e) => {
+        if(sf_disable_pop_state) {
+            history.pushState(null, null, null);
+        } else {
+            if(sf_routing_allowed) {
+                sf_routing_find_navigation_route();
+            }
+        }
+    });
+    
+    console.log("Satisfaction initialized, v." + SF_PUBLIC_VERSION);
+}
+
+
+/*
+    DEPARTMENT -> COMPONENT MECHANICS
+*/
+
+/**
+ * Initialize and prepare to use components in document
+ * @return {void}
+ */
+function sf_component_setup() {
+    sf_component_load_default(document.body);
+}
+
+/**
+ * Mounts a <component> element inside a given container.
+ * @param {HTMLElement} containerElement - The container to append the component to.
+ * @param {string} componentName - The value for the "name" attribute.
+ * @param {string} sourcePath - The value for the "src" attribute.
+ * @returns {HTMLElement} The created <component> element.
+ */
+function sf_component_mount(containerElement, componentName, sourcePath) {
+    const componentElement = document.createElement("component");
+
+    componentElement.setAttribute("name", componentName);
+    componentElement.setAttribute("src", sourcePath);
+
+    containerElement.appendChild(componentElement);
+
+    componentElement.load = function(preloadSubcomponents = true, inputData = null) {
+        sf_component_load([componentName], preloadSubcomponents, inputData, componentElement.parentElement);
+    }
+
+    return componentElement;
+}
+
+/**
+ * Loads the default components specified in the target element (with 'default' and 'on' attributes).
+ * @param {HTMLElement} targetElement - The target element to search for default components.
+ * @return {void}
+ */
+function sf_component_load_default(targetElement) {
+    const defaultComponents = Array.from(targetElement.querySelectorAll("component[default]"));
+    const conditionalComponents = Array.from(targetElement.querySelectorAll("component[on]"));
+
+    sf_component_claim_anonymous([...defaultComponents, ...conditionalComponents]);
+
+    const componentsToLoad = [];
+
+    for (const component of defaultComponents) {
+        componentsToLoad.push(component.getAttribute("name"));
+    }
+
+    for (const component of conditionalComponents) {
+        const condition = component.getAttribute("on");
+        const conditionResult = eval(condition);
+
+        if (conditionResult) {
+            componentsToLoad.push(component.getAttribute("name"));
+        }
+    }
+
+    if (componentsToLoad.length > 0) {
+        sf_component_load(componentsToLoad);
+    }
+}
+
+/**
+ * Claims anonymous components by assigning them a unique name based on their source path and static key.
+ * @param {NodeList} componentElements - A NodeList of component elements to claim as anonymous.
+ * @return {void}
+ */
+function sf_component_claim_anonymous(componentElements) {
+    componentElements.forEach(componentElement => {
+        if(!componentElement.hasAttribute('name')) {
+            const sourcePath = componentElement.getAttribute('src');
+            const fileName = sourcePath.match(/[^\/]+(?=\.)/)[0];
+            const staticKey = sf_hash(sf_xpath_element(componentElement));
+            const newName = `${fileName}-${staticKey}`;
+            componentElement.setAttribute('name', newName);
+            componentElement.setAttribute('anonymous', '');
+        }
+    });
+}
+
+/**
+ * Load/Reload component and prepare it for use
+ * @param {string[]} componentNames - An array of component names to load.
+ * @param {boolean} [preloadSubcomponents=true] - Whether to preload subcomponents.
+ * @param {*} [sharedInputData=null] - Shared object from another place.
+ * @param {HTMLElement} [scopedElement=document.body] - The target element of current scope for search.
+ * @return {HTMLElement} final componentElement - The last component element to load.
+ */
+function sf_component_load(componentNames, preloadSubcomponents = true, sharedInputData = null, scopedElement = document.body) {
+    let finalComponentElement = null;
+    scopedElement.querySelectorAll('component[name="' + componentNames[0] + '"]').forEach(
+        function(componentElement) {
+            if(componentElement.hasAttribute("loaded")) {
+                componentElement.reload();
+            } else {
+                if(sf_component_loading_indicator) {
+                    componentElement.innerHTML = sf_component_loading_indicator;
+                }
+
+                const source = componentElement.getAttribute("src");
+
+                if(sf_component_templates[source]) {
+                    sf_component_set(componentElement, sf_component_templates[source], sharedInputData)
+                        .then(() => { sf_component_load_more(componentElement); });
+                } else {
+                    const xmlHttpRequest = new XMLHttpRequest();
+                    xmlHttpRequest.open('GET', source, true);
+                    xmlHttpRequest.setRequestHeader("Cache-Control", sf_component_cache_control_header);
+                    xmlHttpRequest.onload = function() {
+                        sf_component_templates[source] = this.responseText;
+                        sf_component_set(componentElement, this.responseText, sharedInputData)
+                            .then(() => { sf_component_load_more(componentElement); });
+                    };
+
+                    xmlHttpRequest.onerror = function() { 
+                        sf_event_dispatch(componentElement, SF_EVENT_COMPONENT_ERROR);
+                    };
+
+                    xmlHttpRequest.send();
+                }
+
+                finalComponentElement = componentElement;
+            }
+        }
+    );
+
+    function sf_component_load_more(componentElement) {
+        componentNames.shift();
+        
+        if(componentNames.length > 0) {
+            sf_component_load(componentNames, preloadSubcomponents);
+        } else {
+            sf_event_dispatch(componentElement, SF_EVENT_COMPONENT_FINALIZED, false);
+        }
+
+        if(preloadSubcomponents) {
+            sf_component_load_default(componentElement);
+        }
+    }
+
+    return finalComponentElement;
+}
+
+/**
+ * Set the content of a component element and apply default settings, styles, and navigation tracking.
+ * @param {HTMLElement} componentElement - The component element to set.
+ * @param {string} content - The content to set for the component element.
+ * @param {*} [sharedInputData=null] - Shared input data for the component.
+ * @return {Promise} A promise that resolves when the component is set.
+ */
+function sf_component_set(componentElement, content, sharedInputData = null) {
+    return new Promise((sf_resolve) => {
+        if(sf_resource_allowed) {
+            content = sf_component_replace_resources_data(content);
+        }
+
+        componentElement.innerHTML = content;
+
+        sf_component_set_defaults(componentElement);
+
+        sf_component_apply_styles(componentElement);
+
+        sf_component_track_navigation(componentElement);
+
+        componentElement.inputData = sharedInputData;
+
+        sf_event_dispatch(componentElement, SF_EVENT_COMPONENT_LOAD);
+
+        if (sf_component_javascript_allowed) {
+            sf_component_execute_js(componentElement);
+        }
+
+        const images = componentElement.querySelectorAll('img');
+        if(images.length > 0) {
+            const allImagesLoaded = Array.from(images).every(img => img.complete && img.naturalHeight !== 0);
+            if (allImagesLoaded) {
+                sf_event_dispatch(componentElement, SF_EVENT_COMPONENT_RENDER);
+            }
+        } else {
+            sf_event_dispatch(componentElement, SF_EVENT_COMPONENT_RENDER);
+        }
+
+        if(sf_routing_allowed) {
+            sf_routing_find_navigation_route(componentElement);
+        }
+
+        if(sf_active_navigation_allowed) {
+            sf_patch_active_links(componentElement);
+        }
+
+        if(sf_component_lazy_loading_allowed && componentElement.hasAttribute("lazy")) {
+            sf_component_set_lazy_loading(componentElement);
+        }
+
+        componentElement.setAttribute("loaded", "");
+
+        if(componentElement.hasAttribute("frozen")) {
+            sf_element_unfreeze(componentElement);
+        }
+
+        sf_resolve();
+    });
+}
+
+/**
+ * [BETA 2025/7/13] Initializes lazy loading behavior for a component using IntersectionObserver.
+ * 
+ * This function observes the given DOM element and triggers its `load()` method
+ * when it enters the viewport, and `unload()` when it scrolls above the visible area,
+ * provided it has already been loaded.
+ * 
+ * @param {Element} componentElement - The DOM element to observe. It must implement `load()` and `unload()` methods.
+ * @param {number} [thresholdValue=0] - Intersection threshold (between 0 and 1) that determines when the observer triggers.
+ *                                      Defaults to 0 (fires as soon as any part of the element is visible).
+ */
+function sf_component_set_lazy_loading(componentElement, thresholdValue = 0) {
+    if (componentElement.hasAttribute("sf-lazy-observed")) {
+        return;
+    }
+
+    componentElement.setAttribute("sf-lazy-observed", "");
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const rect = componentElement.getBoundingClientRect();
+            const isAboveViewport = rect.bottom < 0;
+
+            if (entry.isIntersecting && !componentElement.hasAttribute("loaded")) {
+                componentElement.load();
+            } else if (!entry.isIntersecting && isAboveViewport && componentElement.hasAttribute("loaded")) {
+                componentElement.unload();
+            }
+        });
+    }, { 
+        threshold: thresholdValue,
+        rootMargin: '200px',
+    });
+
+    observer.observe(componentElement);
+}
+
+/**
+ * Replaces strings like ##Resource.Name.Key*## in content.
+ * @param {string} content - The string for replacement.
+ * @return {string} The final version of string.
+ */
+function sf_component_replace_resources_data(content) {
+    const pattern = /##Resource\.(\w+)\.([\w.]+)##/g;
+
+    let matches;
+    while ((matches = pattern.exec(content)) !== null) {
+        const dictionaryKey = matches[1];
+        const resourceKey = matches[2];
+        const replacementValue = sf_resource_get(dictionaryKey, resourceKey) ?? sf_resource_undefined_key_value;
+        content = content.replaceAll(`##Resource.${dictionaryKey}.${resourceKey}##`, replacementValue);
+    }
+
+    return content; 
+}
+
+/**
+ * Set default properties and methods for a component element.
+ * @param {HTMLElement} componentElement - The component element to set defaults for.
+ * @return {void}
+ */
+function sf_component_set_defaults(componentElement) {
+    componentElement.name = componentElement.getAttribute("name");
+
+    componentElement.find = function(name) {
+        const result = componentElement.querySelectorAll(`*[name="${name}"]`)[0];
+
+        if(result?.tagName.toLowerCase() === 'component') {
+            sf_component_set_defaults(result);
+        }
+
+        return result;
+    }
+
+    componentElement.findClasses = function(className) {
+        return componentElement.querySelectorAll(`.${className}`);
+    }
+
+    componentElement.load = function(preloadSubcomponents = true, inputData = null) {
+        sf_component_load([componentElement.name], preloadSubcomponents, inputData, componentElement.parentElement);
+    }
+
+    componentElement.unload = function() {
+        sf_component_unload(componentElement.name, componentElement.parentElement);
+    }
+
+    componentElement.reload = function(preloadSubcomponents = true, inputData = null) {
+        sf_component_unload(componentElement.name, componentElement.parentElement);
+        sf_component_load([componentElement.name], preloadSubcomponents, inputData, componentElement.parentElement);
+    }
+
+    componentElement.hasLoaded = function() {
+        return componentElement.hasAttribute("loaded");
+    }
+
+    componentElement.navigate = function(saveSearchParams = true, inputData = null) {
+        sf_component_navigate(componentElement.name, saveSearchParams, inputData, componentElement.parentElement);
+    }
+
+    componentElement.state = function(name) {
+        const componentNameKey = `component.${componentElement.name}.${name}`;
+        return sf_state_get(componentNameKey);
+    }
+
+    componentElement.setState = function(name, value = null, setLocalStorage = false) {
+        const componentNameKey = `component.${componentElement.name}.${name}`;
+        sf_state_set(componentNameKey, value, setLocalStorage);
+    }
+
+    componentElement.parent = function() {
+        return componentElement.parentElement.closest('component');
+    }
+
+    componentElement.setModel = function(model, templateName) {
+        componentElement.model = model;
+        componentElement.querySelectorAll(`[template="${templateName}"]`).forEach(
+            function(element) {
+                sf_model_set(element, model);
+            }
+        );
+    }
+
+    componentElement.setMultiplier = function(targetArray, templateName, display = 'block') {
+        componentElement.querySelectorAll(`[template="${templateName}"]`).forEach(
+            function(element) {
+                sf_model_set_multiplier(element, targetArray, display)
+            }
+        );
+    }
+
+    componentElement.dispatch = function(eventName) {
+        sf_event_dispatch(componentElement, eventName);
+    }
+
+    componentElement.setEvent = function(eventName, eventHandler) {
+        sf_event_set(componentElement, eventName, eventHandler);
+    }
+}
+
+/**
+ * Unload a component and remove it from tracking.
+ * @param {string} componentName - The name of the component to unload.
+ * @param {HTMLElement} [scopedElement=document.body] - The target element of current scope for search.
+ * @return {void}
+ */
+function sf_component_unload(componentName, scopedElement = document.body) {
+    scopedElement.querySelectorAll('component[name="' + componentName + '"]').forEach(
+        function(componentElement) {
+            sf_event_dispatch(componentElement, SF_EVENT_COMPONENT_UNLOAD);
+
+            if(componentElement.hasAttribute("frozen")) {
+                sf_element_freeze(componentElement);
+            }
+
+            componentElement.removeAttribute("loaded", "");
+            componentElement.replaceChildren();
+
+            sf_event_dispatch(componentElement, SF_EVENT_COMPONENT_CLEARED);
+        }
+    );
+}
+
+/**
+ * Track navigation for elements with the 'navigation-component-name' attribute within the target element.
+ * @param {HTMLElement} [targetElement=null] - The target element to track navigation for. Defaults to the document body.
+ * @return {void}
+ */
+function sf_component_track_navigation(targetElement = null) {
+    targetElement ?? document.body;
+    targetElement.querySelectorAll('*[navigation-component-name]').forEach(
+        function(element) {
+            const componentName = element.getAttribute("navigation-component-name");
+            element.addEventListener("click", function () {
+                sf_component_navigate(componentName, false);
+            }, false);
+        }
+    );
+}
+
+/**
+ * Navigate to a component by name.
+ * @param {string} componentName - The name of the component for navigate.
+ * @param {boolean} saveSearchParams - Whether to save search parameters in the URL or not. Default is true.
+ * @param {*} [sharedInputData=null] - Shared object from another place.
+ * @param {HTMLElement} [scopedElement=document.body] - The target element of current scope for search.
+* @return {void}
+ */
+function sf_component_navigate(componentName, saveSearchParams = true, sharedInputData = null, scopedElement = document.body) {
+    const finalComponentElement = sf_component_load([componentName], true, sharedInputData ?? null);
+
+    if(finalComponentElement) {
+        if(sf_component_navigation_stack[sf_component_navigation_stack.length - 1] != finalComponentElement) {
+            sf_component_navigation_stack.push(finalComponentElement);
+        }
+
+        sf_event_dispatch(finalComponentElement, SF_EVENT_COMPONENT_NAVIGATION_IN);
+    }
+    
+    scopedElement.querySelectorAll('component[name="' + componentName + '"]').forEach(
+        function(element) {
+            if(element.parentElement.hasAttribute("navigation-switch")) {
+                element.parentElement.querySelectorAll('component:not([name="' + componentName + '"]').forEach(
+                    function(parentComponentElement) {
+                        sf_event_dispatch(parentComponentElement, SF_EVENT_COMPONENT_NAVIGATION_OUT);//to unload 
+                        const parentComponentName = parentComponentElement.getAttribute("name");
+                        sf_component_unload(parentComponentName);
+                    }
+                );
+            }
+        }
+    );
+
+    if(sf_routing_allowed) {
+        sf_routing_set_route_path(componentName, saveSearchParams);
+    }
+}
+
+/**
+ * Execute JavaScript in <script> tag within the target element.
+ * @param {HTMLElement} componentElement - The target component to execute JavaScript within.
+ * @return {void}
+ */
+function sf_component_execute_js(componentElement) {
+    componentElement.querySelectorAll('script').forEach(
+        function(scriptElement) {
+            const scriptCode = scriptElement.innerHTML;
+            const scriptFunction = new Function('component', scriptCode);
+            scriptFunction(componentElement);
+
+            if(!sf_component_javascript_builtin) {
+                scriptElement.remove();
+            }
+        }
+    );
+}
+
+/**
+ * Apply styles to the target element by adding a unique postfix to class names (component only).
+ * @param {HTMLElement} targetElement - the target element to which the styles are applied.
+ * @return {void}
+ */
+function sf_component_apply_styles(targetElement) {
+    const postfix = sf_random_string();
+    const classRegex = /(?<=\.)[\w-]+(?=[^{}]*\{)/g;
+    
+    targetElement.querySelectorAll('style:not([global])').forEach(
+        function(style) {
+            const classMatches = style.innerHTML.match(classRegex);
+            style.innerHTML = style.innerHTML.replace(classRegex, `$&-${postfix}`);
+
+            if (classMatches) {
+                targetElement.querySelectorAll('[class]').forEach(element => {
+                    if(sf_component_style_add_new_class) {
+                        element.className = element.className.split(' ').map(name => classMatches.includes(name) ? `${name} ${name}-${postfix}` : name).join(' ');
+                    } else {
+                        element.className = element.className.split(' ').map(name => classMatches.includes(name) ? `${name}-${postfix}` : name).join(' ');
+                    }
+                });
+            }
+        }
+    );
+}
+
+
+/*
+    DEPARTMENT -> ROUTING MECHANICS
+*/
+
+/**
+ * Find and navigate to a component that route based on the current path or a specified path template.
+ * @return {boolean}
+ */
+function sf_routing_find_navigation_route(containerElement = document, path = window.location.pathname) {
+    const routeElement = containerElement.querySelector('route[path="' + path + '"]');
+    if (routeElement) {
+        sf_event_dispatch(containerElement, SF_EVENT_ROUTING_ROUTE_FOUND, true);
+        const componentName = routeElement.getAttribute("navigation-component-name");
+        sf_component_navigate(componentName);
+        return true;
+    } else {
+        sf_event_dispatch(containerElement, SF_EVENT_ROUTING_ROUTE_NOT_FOUND, true);
+        return false;
+    }
+}
+
+/**
+ * Set the current route path based on the specified component name.
+ * @param {string} componentName - The name of the component to set the route path for.
+ * @param {boolean} saveSearchParams - Whether to save search parameters in the URL or not. Default is true.
+ * @return {void}
+ */
+function sf_routing_set_route_path(componentName, saveSearchParams = true) {
+    document.querySelectorAll(`route[navigation-component-name="${componentName}"]`).forEach(routeElement => {
+        const currentURL = new URL(window.location.href);
+        currentURL.pathname = routeElement.getAttribute("path");
+
+        if(!saveSearchParams) {
+            currentURL.search = "";
+        }
+
+        const previousURL = window.location.href;
+        window.history.pushState({ previousURL }, '', currentURL.href);
+    });
+}
+
+
+/*
+    DEPARTMENT -> ACTIVE NAVIGATION
+*/
+
+/**
+ * Using links allows you to move between components by dynamically loading mechanism.
+ * @param {HTMLElement} targetElement - The target element to links search.
+ * @return {void}
+ */
+function sf_patch_active_links(targetElement) {
+    targetElement.querySelectorAll(`a[active]`).forEach(element => {
+        const href = element.getAttribute("href");
+        if (!href || href[0] !== '/' || (element.hasAttribute("target") && element.getAttribute("target") !== "_self")) {
+            return;
+        }
+        element.addEventListener("click", function (event) {
+            event.preventDefault();
+            const newUrl = new URL(element.href);
+            const params = newUrl.searchParams.toString();
+            const refreshUrl = window.location.protocol + "//" +
+                               window.location.host +
+                               window.location.pathname +
+                               (params ? '?' + params : '');
+            if (newUrl.pathname === location.pathname) {
+                window.location.href = newUrl;
+            } else {
+                window.history.replaceState({ path: refreshUrl }, '', refreshUrl);
+                const isNavigated = sf_routing_find_navigation_route(document, newUrl.pathname);
+
+                if(!isNavigated) {
+                    window.location.href = newUrl;
+                }
+            }
+        }, false);
+    });
+}
+
+
+/*
+    DEPARTMENT -> PROPERTY MANAGEMENT
+*/
+
+/**
+ * Create a property object with a default value and an optional callback function to be called when the value is changed.
+ * @param {*} defaultPropertyValue - The default value of the property.
+ * @param {function} [raiseCallback=null] - An optional callback function to be called when the value is changed.
+ * @return {object} - A property object with getter and setter methods for the value (get(), set(value), raise()).
+ */
+function sf_property_set(defaultPropertyValue, raiseCallback = null) {
+    return {
+        _value: defaultPropertyValue,
+        _raiseCallback: raiseCallback,
+
+        get value() {
+            return this.get();
+        },
+        set value(newValue) {
+            this.set(newValue);
+        },
+
+        get: function() {
+            return this._value;
+        },
+        set: function(newValue) {
+            this._value = newValue;
+            this.raise();
+        },
+        raise: function() {
+            if(this._raiseCallback) {
+                this._raiseCallback(this._value);
+            }
+        }
+      };
+}
+
+
+/*
+    DEPARTMENT -> MODEL MECHANICS
+*/
+
+/**
+ * Set a model-object for the target element and track its properties, commands, bindings.
+ * @param {HTMLElement} targetElement - The target element to set the model for.
+ * @param {*} model - The model to set for the target element.
+ * @return {void}
+ */
+function sf_model_set(targetElement, model) { //add onModelUnset?
+    sf_model_find_properties(targetElement);
+    sf_model_track_properties(targetElement, model);
+    sf_model_track_commands(targetElement, model);
+    sf_model_track_bindings(targetElement, model);
+
+    if(model.construct) {
+        model.construct.bind(model)
+        model.construct(targetElement);
+    }
+
+    targetElement.model = model;
+
+    sf_event_dispatch(targetElement, SF_EVENT_MODEL_SET);
+}
+
+/**
+ * Track properties of a model and update them when changed.
+ * @param {HTMLElement} targetElement - The target element to track properties for.
+ * @param {*} model - The model to track properties for.
+ * @return {void}
+ */
+function sf_model_track_properties(targetElement, model) {
+    Object.keys(model).forEach(
+        function(key) {
+            const value = model[key];
+            if(!(value instanceof Function)) {
+                model[key] = sf_property_set(value, function(value) {
+                    sf_model_update_property(targetElement, key, value);
+                });
+                model[key].raise();
+            }
+        }
+    );
+}
+
+/**
+ * Find and mark properties within the target element and its child nodes.
+ * @param {Node} targetElement - The target element to find properties within.
+ * @return {void}
+ */
+function sf_model_find_properties(targetElement) {
+    if(targetElement.nodeType === Node.TEXT_NODE && targetElement.nodeValue.includes('{{') && targetElement.nodeValue.includes('}}')) {
+        targetElement.parentElement.setAttribute('sf-model-content-template', targetElement.nodeValue);
+    }
+    
+    if(targetElement.attributes) {
+        Array.from(targetElement.attributes)
+            .filter(attribute => attribute.name !== 'bind' && attribute.name !== 'command'
+                && attribute.value.includes('{{') && attribute.value.includes('}}'))
+            .forEach(attribute => targetElement.setAttribute(`sf-model-template:${attribute.name}`, attribute.value));
+
+            if((targetElement.hasAttribute('visible') || targetElement.hasAttribute('invisible'))
+                && window.getComputedStyle(targetElement).getPropertyValue('display')) {
+                const displayValue = window.getComputedStyle(targetElement).getPropertyValue('display');
+                targetElement.setAttribute('sf-visibility-display', displayValue);
+            }
+    }
+
+    Array.from(targetElement.childNodes)
+        .filter(node => node.parentNode.nodeName !== 'COMPONENT' && !(node instanceof Element && node.hasAttribute('template')))
+        .forEach(sf_model_find_properties);
+}
+
+/**
+ * Update a property within the target element and its child nodes.
+ * @param {HTMLElement} targetElement - The target element to update the property within.
+ * @param {string} bindableKey - The key of the property to update.
+ * @param {*} value - The new value of the property.
+ * @return {void}
+ */
+function sf_model_update_property(targetElement, bindableKey, value) {
+    const elements = targetElement.querySelectorAll('*');
+    elements.forEach(element => {
+        if (element.parentNode.matches(':not(component)')) {
+            Array.from(element.attributes)
+            .filter(attribute => attribute.name.startsWith('sf-model-template:') && attribute.value.includes(`{{${bindableKey}}}`))
+            .forEach(attribute => {
+                const targetAttribute = attribute.name.replace('sf-model-template:', '');
+                const newValue = attribute.value.replaceAll(new RegExp(`{{${bindableKey}}}`, 'g'), value);
+                element.setAttribute(targetAttribute, newValue);
+                
+                switch (targetAttribute) {
+                    case 'visible':
+                        sf_model_update_visibility(element, value);
+                        break;
+
+                    case 'invisible':
+                        sf_model_update_visibility(element, !value);
+                        break;
+
+                    case 'when':
+                        const conditionResult = eval(newValue);
+                        sf_model_update_visibility(element, conditionResult);
+                        break;
+
+                    case 'value':
+                        element.value = newValue;
+                        break;
+                }
+            });
+        }
+    });
+
+    targetElement.querySelectorAll(`:not(component)[sf-model-content-template*="{{${bindableKey}}}"]`).forEach(element => {
+        const contentTemplate = element.getAttribute('sf-model-content-template'); 
+        // TODO: fix problem with multiple {{props}} in one tag
+        element.firstChild.textContent = contentTemplate.replaceAll(new RegExp(`{{${bindableKey}}}`, 'g'), value);
+    });
+}
+
+/**
+ * Updates the visibility of an element on the page.
+ * @param {HTMLElement} targetElement - The element whose visibility needs to be updated
+ * @param {string} value - The value that determines whether the element should be visible or not
+ * @return {void}
+ */
+function sf_model_update_visibility(targetElement, value) {
+    if (targetElement.hasAttribute("transparent")) {
+        targetElement.style.visibility = value ? "visible" : "hidden";
+    } else {
+        targetElement.style.display = value
+            ? (targetElement.getAttribute('sf-visibility-display') ?? 'block')
+            : 'none';
+    }
+}
+
+/**
+ * Track commands of a model and set event listeners for them within the target element.
+ * @param {HTMLElement} targetElement - The target element to track commands within.
+ * @param {*} model - The model to track commands for.
+ * @return {void}
+ */
+function sf_model_track_commands(targetElement, model) {
+    Object.keys(model).forEach(key => {
+        const value = model[key];
+        if (value instanceof Function) {
+            const commandElements = targetElement.querySelectorAll(`[command="{{${key}}}"]`);
+            commandElements.forEach(commandElement => {
+                sf_model_set_command_listener(commandElement, model, value);
+            });
+        }
+    });
+}
+
+/**
+ * Set an event listener for a command on the target element (for another event set 'commandEvent' attribute, default: click).
+ * @param {HTMLElement} targetElement - The target element to set the event listener on.
+ * @param {*} model - The model to bind the callback function to.
+ * @param {function} callbackFunction - The callback function to call when the event is triggered.
+ * @return {void}
+ */
+function sf_model_set_command_listener(targetElement, model, callbackFunction) {
+    const listenerEvent = targetElement.getAttribute("commandEvent") ?? "click";
+    targetElement.addEventListener(listenerEvent, function () {
+        callbackFunction.call(model, {
+            element: targetElement,
+            commandEvent: listenerEvent,
+            model: model,
+            event: event
+        });
+    }, false);
+}
+
+/**
+ * Track bindings of a model and set event listeners for them within the target element.
+ * @param {HTMLElement} targetElement - The target element to track bindings within.
+ * @param {*} model - The model to track bindings for.
+ * @return {void}
+*/
+function sf_model_track_bindings(targetElement, model) {
+    Object.keys(model).forEach(key => {
+      const value = model[key];
+      if (!(value instanceof Function)) {
+        const bindingElements = targetElement.querySelectorAll(`[bind="{{${key}}}"]`);
+        bindingElements.forEach(bindingElement => {
+          sf_model_set_binding_listener(bindingElement, model, key);
+        });
+      }
+    });
+}
+
+/**
+ * Set an event listener for a binding on the target element.
+ * @param {HTMLElement} targetElement - The target element to set the event listener on.
+ * @param {*} model - The model to update when the event is triggered.
+ * @param {string} property - The property of the model to update when the event is triggered.
+ * @return {void}
+ */
+function sf_model_set_binding_listener(targetElement, model, property) {
+    const listenerEvent = targetElement.getAttribute("bindEvent") ?? "change";
+    targetElement.addEventListener(listenerEvent, function () {
+        model[property].set(targetElement.value);
+    }, false);
+}
+
+/**
+ * Creates multiple copies of any template from an array of models.
+ * @param {HTMLElement} templateElement - The template element to set the multiplier for.
+ * @param {Array} targetArray - The target array of model-object to set as a multiplier.
+ * @param {string} [display='block'] - The display style to apply to multiplied elements.
+ * @return {void}
+ */
+function sf_model_set_multiplier(templateElement, targetArray, display = 'block') {
+    templateElement.style.display = 'none';
+
+    const loadInternalComponents = templateElement.hasAttribute('default');
+
+    sf_model_set_multiplier_reset(templateElement);
+
+    Array.from(targetArray).forEach((model, index) => {
+        sf_model_set_multiplier_item(model, index, loadInternalComponents);
+    });
+
+    targetArray.synchronize = function() {
+        sf_model_set_multiplier(templateElement, targetArray, display);
+    }
+
+    targetArray.values = function() {
+        return targetArray.slice();
+    }
+    
+    targetArray.push = function(...args) {
+        args.forEach((model) => {
+            sf_model_set_multiplier_item(model, targetArray.length, loadInternalComponents);
+        });
+        return Array.prototype.push.apply(this, args);
+    };
+
+    targetArray.pop = function(arrayIndex) {
+        sf_model_unset_multiplier_template(templateElement, arrayIndex);
+        return Array.prototype.pop.apply(this, [arrayIndex]);
+    };
+
+    function sf_model_set_multiplier_item(model, arrayIndex, loadComponents = false) {
+        const newElement = sf_model_set_multiplier_template_clone(templateElement, arrayIndex, display);
+        sf_model_set_multiplier_model(newElement, model);
+
+        if(sf_model_multiplier_default_functions_allowed) {
+            sf_model_set_multiplier_default_functions(model, arrayIndex);
+        }
+
+        if(loadComponents) {
+            sf_model_set_multiplier_default_components(newElement);
+        }
+    }
+
+    function sf_model_set_multiplier_default_components(newElement) {
+        const components = newElement.querySelectorAll("component");
+
+        sf_component_claim_anonymous(components);
+        
+        if(components && components.length > 0) {
+            const componentNames = Array.from(components).map(component => component.getAttribute("name"));
+            sf_component_load(componentNames);
+        }
+    }
+
+    function sf_model_set_multiplier_default_functions(model, arrayIndex) {
+        model.unset = function() {
+            sf_model_unset_multiplier_template(templateElement, arrayIndex);
+            targetArray.splice(arrayIndex, 1);
+        }
+
+        model.getIndex = function() {
+            return arrayIndex;
+        }
+
+        model.getArray = function() {
+            return targetArray;
+        }
+    }
+}
+
+/**
+ * Unset a multiplier template from page for the specified array index.
+ * @param {HTMLElement} targetElement - The target element to unset the multiplier template for.
+ * @param {number} arrayIndex - The array index to unset the multiplier template for, 'sf-template-index' attribute.
+ * @return {void}
+ */
+function sf_model_unset_multiplier_template(targetElement, arrayIndex) {
+    targetElement.parentElement.querySelectorAll(`[sf-template-index="${arrayIndex}"]`).forEach(element => {
+        element.remove();
+    });
+}
+
+/**
+ * Set a model for a multiplier template element.
+ * @param {HTMLElement} templateElement - The template element to set the model for.
+ * @param {*} model - The model to set for the template element.
+ * @return {void}
+ */
+function sf_model_set_multiplier_model(templateElement, model) {
+    sf_model_set(templateElement, model);
+    templateElement.model = model;
+}
+
+/**
+ * Clone a multiplier template element and set its index, display style.
+ * @param {HTMLElement} templateElement - The template element to clone.
+ * @param {number} index - The index to set for the cloned element.
+ * @param {string} display - The display style to apply to the cloned element.
+ * @return {HTMLElement} The cloned template element.
+ */
+function sf_model_set_multiplier_template_clone(templateElement, index, display) {
+    const newElement = templateElement.cloneNode(true);
+    newElement.setAttribute('sf-template-index', index);
+    newElement.style.display = display;
+    templateElement.parentNode.appendChild(newElement);
+    const newName = `${newElement.getAttribute('template')}-${sf_random_string()}`;
+    newElement.setAttribute('template', newName);
+    return newElement;
+}
+
+/**
+ * Reset a multiplier by removing all cloned elements.
+ * @param {HTMLElement} targetElement - The target element to reset the multiplier for.
+ * @return {void}
+ */
+function sf_model_set_multiplier_reset(targetElement) {
+    targetElement.parentNode.querySelectorAll(`[sf-template-index]`).forEach(element => {
+        element.remove();
+    });
+}
+
+
+/*
+    DEPARTMENT -> DATA EXCHANGE
+*/
+
+/**
+ * Retrieves a shared point object by its name from sf_point_shared_objects variable.
+ * @param {string} name - The name of the shared point to retrieve.
+ * @returns {Object} The shared point object with subscribe, unsubscribe, and share methods.
+ */
+function sf_point_get(name) {
+    return sf_point_shared_objects[name];
+}
+
+/**
+ * Creates a shared point object for other code members to subscribe to and listen to.
+ * @param {string} [name=null] - The name of the point to be shared.
+ * @returns {Object} The point object with subscribe(keyContext, callback), unsubscribe(keyContext), and share(data) methods.
+ */
+function sf_point_set(name = null) {
+    const point = {
+        _subscriptions: [],
+
+        subscribe(keyContext, callback) {
+            this._subscriptions[keyContext] = {callback, keyContext};
+        },
+        unsubscribe(keyContext) {
+            delete this._subscriptions[keyContext];
+        },
+        share(data) {
+            Object.values(this._subscriptions)
+                .forEach(({callback, keyContext}) => callback.call(keyContext, data));
+        }
+    };
+
+    if(name) {
+        sf_point_shared_objects[name] = point;
+    }
+
+    return point;
+}
+
+
+/*
+    DEPARTMENT -> STATE MANAGER
+*/
+
+/**
+ * Gets the value of a state by name.
+ * @param {string} name - The name of the state to get.
+ * @return {*} The value of the state from localStorage if it exists, otherwise from states.
+ */
+function sf_state_get(name) {
+    return localStorage.getItem(sf_state_ls_prefix + name) ?? sf_states[name];
+}
+
+/**
+ * Sets the value of a state by name.
+ * @param {string} name - The name of the state to set.
+ * @param {*} value - The value to set for the state.
+ * @param {boolean} [setLocalStorage=false] - Whether to set the value in localStorage as well.
+ * @return {void}
+ */
+function sf_state_set(name, value, setLocalStorage = false) {
+    sf_states[name] = value;
+
+    if(setLocalStorage) {
+        localStorage.setItem(sf_state_ls_prefix + name, value);
+    }
+}
+
+/**
+ * Unsets a state by name.
+ * @param {string} name - The name of the state to unset.
+ * @return {void}
+ */
+function sf_state_unset(name) {
+    delete sf_states[name];
+    localStorage.removeItem(sf_state_ls_prefix + name);
+}
+
+
+/*
+    DEPARTMENT -> RESOURCES
+*/
+
+/**
+ * Loads all resources specified in the HTML document and stores them in the common dictionary.
+ * @param {function} callback - The function to call after all resources have been loaded.
+ * @return {void}
+ */
+function sf_resource_load_all(callback) {
+    const resources = Array.from(document.querySelectorAll("resource[name]"));
+
+    if(resources.length < 1) {
+        sf_resource_allowed = false;
+    }
+
+    const promises = resources.map(element => {
+        return new Promise((resolve, reject) => {
+            const condition = element.getAttribute("on");
+            if(condition && !eval(condition)) {
+                resolve();
+            } else {
+                const source = element.getAttribute("src");
+                const name = element.getAttribute("name");
+                const xmlHttpRequest = new XMLHttpRequest();
+                xmlHttpRequest.open('GET', source, true);
+                xmlHttpRequest.setRequestHeader("Cache-Control", sf_resource_cache_control_header);
+                xmlHttpRequest.onload = function() {
+                    sf_resource_content[name] = JSON.parse(this.responseText);
+                    resolve();
+                };
+                xmlHttpRequest.onerror = function() {
+                    reject();
+                };
+                xmlHttpRequest.send();
+            }
+        });
+    });
+
+    Promise.all(promises)
+        .then(() => callback())
+        .then(() => {
+            if(sf_resource_callback_after) {
+                sf_resource_callback_after();
+            }
+        })
+        .catch(() => console.log('Some resources could not be loaded'));
+}
+
+/**
+ * Retrieves a specific resource from the common dictionary.
+ * @param {string} dictionaryNameKey - The key of the dictionary in which to look for the resource.
+ * @param {string} internalResourceKey - The key of the resource to retrieve.
+ * @param {*} defaultValue - Any value for return if value doesn't exists.
+ * @returns {string} The requested resource.
+ */
+function sf_resource_get(dictionaryNameKey, internalResourceKey, defaultValue = null) {
+    return sf_resource_content[dictionaryNameKey][internalResourceKey] ?? defaultValue;
+}
+
+
+/*
+    DEPARTMENT -> EVENTS
+*/
+
+SF_EVENT_MODEL_SET = "modelset";
+
+SF_EVENT_ROUTING_ROUTE_FOUND = "routefound";
+SF_EVENT_ROUTING_ROUTE_NOT_FOUND = "routenotfound";
+
+SF_EVENT_COMPONENT_LOAD = "load";
+SF_EVENT_COMPONENT_UNLOAD = "unload"; // TODO: Check possibility to dispatch it on page close.
+SF_EVENT_COMPONENT_ERROR = "error"; 
+SF_EVENT_COMPONENT_CLEARED = "cleared";
+SF_EVENT_COMPONENT_NAVIGATION_IN = "navigationin"; 
+SF_EVENT_COMPONENT_NAVIGATION_OUT = "navigationout";
+SF_EVENT_COMPONENT_RENDER = "render";
+SF_EVENT_COMPONENT_FINALIZED = "finalized";
+
+/**
+ * Attaches an event handler to the specified element.
+ * @param {HTMLElement} element - The element to which the event handler should be attached.
+ * @param {string} eventName - The name of the event to which the handler should be attached.
+ * @param {Function} eventHandler - The event handler to be attached.
+ */
+function sf_event_set(element, eventName, eventHandler) {
+    element.addEventListener(sf_event_prefix + eventName, eventHandler);
+}
+
+
+/**
+ * Creates and dispatches an event on the specified element.
+ * @param {HTMLElement} element - The element on which the event should be dispatched.
+ * @param {string} eventName - The name of the event to be dispatched.
+ * @param {boolean} bubbles - Indicates whether the event should bubble up through the DOM or not. Default is true.
+ * @param {boolean} cancelable - Indicates whether the event can be cancelled. Default is false.
+ * @returns {Object} newEvent - The new event that has been dispatched.
+ */
+function sf_event_dispatch(element, eventName, bubbles = true, cancelable = false) {
+    const newEvent = new Event(sf_event_prefix + eventName, { "bubbles": bubbles, "cancelable": cancelable });
+    element.dispatchEvent(newEvent);
+    return newEvent;
+}
+
+
+/*
+    DEPARTMENT -> DEPENDENCIES
+*/
+
+/**
+ * Set up and load dependencies (JS, CSS) into the document.
+ * @param {string} externalSource - The URL of the external dependency file.
+ * @param {boolean} cacheAllowed - Allow to cache dependency file content.
+ * @return {void}
+ */
+function sf_dependency_set(externalSource, cacheAllowed = false) {
+    const extension = externalSource.split('.').pop().split('?')[0];
+    let finalSource = externalSource;
+
+    if(!cacheAllowed) {
+        if(sf_dependency_stable_version) {
+            finalSource += "?version-timestamp=" + sf_dependency_stable_version;
+        } else {
+            finalSource += "?version-timestamp=" + new Date().getTime();
+        }
+    }
+
+    switch(extension) {
+        case 'js':
+            sf_dependency_set_script(finalSource);
+            break;
+        case 'css':
+            sf_dependency_set_stylesheet(finalSource);
+            break;
+        default:
+            console.error('sf_dependency_set - unsupported dependency type detected: ' + extension);
+    }
+}
+
+/**
+ * Set up and load script dependency into the document.
+ * @param {string} finalSource - The final URL of the external script file.
+ * @return {void}
+ */
+function sf_dependency_set_script(finalSource) {
+    const script = document.createElement('script');
+    script.src = finalSource;
+    document.head.appendChild(script);
+}
+
+/**
+ * Set up and load stylesheet dependency into the document.
+ * @param {string} finalSource - The final URL of the external stylesheet file.
+ * @return {void}
+ */
+function sf_dependency_set_stylesheet(finalSource) {
+    const link = document.createElement('link');
+    link.href = finalSource;
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+}
+
+
+/*
+    DEPARTMENT -> OTHER UTILS
+*/
+
+/**
+ * Generates a random string of 9 characters.
+ * @returns {string} A random string of 9 characters.
+ */
+function sf_random_string() {
+    return Math.random().toString(36).slice(2, 11);
+}
+
+/**
+ * Pauses the execution of code for a specified amount of time.
+ * @param {number} milliseconds - The number of milliseconds to pause execution.
+ */
+function sf_sleep(milliseconds) {
+    const date = Date.now();
+    let currentDate = null;
+    do {
+        currentDate = Date.now();
+    } while (currentDate - date < milliseconds);
+}
+
+/**
+ * Evaluates an XPath expression and returns the result as an ordered snapshot of nodes.
+ * @param {Node} targetElement - The context node for the XPath expression.
+ * @param {string} xpathExpression - The XPath expression to evaluate.
+ * @returns {XPathResult} An XPathResult object of type ORDERED_NODE_SNAPSHOT_TYPE.
+ */
+function sf_xpath_find(targetElement, xpathExpression) {
+    return document.evaluate(xpathExpression, targetElement, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+}
+
+/**
+ * Generates an XPath expression for a given element.
+ * @param {Element} element - The element for which to generate the XPath expression.
+ * @param {string} xpath - The initial XPath expression (optional).
+ * @returns {string} An XPath expression that uniquely identifies the given element.
+ */
+function sf_xpath_element(element, xpath = '') {
+    while (element && element.nodeType === 1) {
+        let index = 1;
+        for (let sibling = element.previousSibling; sibling; sibling = sibling.previousSibling) {
+            if (sibling.nodeType !== Node.DOCUMENT_TYPE_NODE && sibling.nodeName === element.nodeName) {
+                ++index;
+            }
+        }
+        xpath = `/${element.nodeName}[${index}]` + xpath;
+        element = element.parentNode;
+    }
+    return xpath;
+}
+
+/**
+ * Calculates a hash code for a text string.
+ * @param {string} text - The text string for which the hash code is calculated.
+ * @returns {string} The hash code as a string in base 36.
+ */
+function sf_hash(text) {
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) {
+        hash = (hash << 5) - hash + text.charCodeAt(i);
+        hash = hash & hash;
+    }
+    return hash.toString(36);
+}
+
+/**
+ * [BETA 2025/7/13] Fixes the size of an element on the page.
+ * @param {Element} element - The element for freeze.
+ * @param {string} display - Display style property for set (optional).
+ */
+function sf_element_freeze(element, display = "block") {
+    if (element.hasAttribute("sf-frozen")) {
+        return;
+    }
+
+    const rect = element.getBoundingClientRect();
+
+    element.style.boxSizing = "border-box";
+    element.style.width = rect.width + "px";
+    element.style.height = rect.height + "px";
+    element.style.minWidth = rect.width + "px";
+    element.style.minHeight = rect.height + "px";
+    element.style.display = display;
+
+    element.setAttribute("sf-frozen", "");
+}
+
+/**
+ * [BETA 2025/7/13] Unfreeze the size of an element on the page after freeze.
+ * @param {Element} element - The element for freeze.
+ * @param {string} display - Display style property for set (optional).
+ */
+function sf_element_unfreeze(element, display = "") {
+    if (!element.hasAttribute("sf-frozen")) {
+        return;
+    }
+
+    element.style.width = "";
+    element.style.height = "";
+    element.style.minWidth = "";
+    element.style.minHeight = "";
+    element.style.display = display;
+    element.style.boxSizing = "";
+
+    element.removeAttribute("sf-frozen");
+}
