@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SatisfactionJS Documentation</title>
+  <meta name="description" content="Complete documentation for SatisfactionJS 2.1.2.1229.">
+  <style>
+    :root {
+      --bg: #f7f8fb;
+      --panel: #ffffff;
+      --text: #172033;
+      --muted: #5f6b7a;
+      --border: #dfe4ec;
+      --code: #101828;
+      --accent: #355cff;
+      --warn: #fff7ed;
+      --warn-border: #fed7aa;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: var(--text); background: var(--bg); line-height: 1.65; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .layout { display: grid; grid-template-columns: 290px minmax(0, 1fr); min-height: 100vh; }
+    aside { position: sticky; top: 0; height: 100vh; overflow: auto; padding: 28px 22px; background: #111827; color: #fff; }
+    aside h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.03em; }
+    aside p { margin: 0 0 24px; color: #c7d2fe; font-size: 14px; }
+    aside nav a { display: block; padding: 7px 0; color: #e5e7eb; font-size: 14px; }
+    main { max-width: 1060px; padding: 48px 48px 96px; }
+    .hero { padding: 36px; background: linear-gradient(135deg, #ffffff 0%, #eef2ff 100%); border: 1px solid var(--border); border-radius: 22px; margin-bottom: 28px; box-shadow: 0 16px 45px rgba(17, 24, 39, 0.06); }
+    .hero h2 { font-size: 44px; line-height: 1.08; margin: 0 0 14px; letter-spacing: -0.05em; }
+    .hero p { max-width: 780px; color: var(--muted); margin: 0; font-size: 18px; }
+    .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+    .badge { display: inline-flex; padding: 5px 11px; border-radius: 999px; background: #fff; border: 1px solid var(--border); color: #344054; font-size: 13px; }
+    section { background: var(--panel); border: 1px solid var(--border); border-radius: 18px; padding: 30px; margin: 22px 0; }
+    h2 { font-size: 30px; margin: 0 0 14px; letter-spacing: -0.035em; }
+    h3 { font-size: 22px; margin: 28px 0 10px; letter-spacing: -0.02em; }
+    p { margin: 0 0 14px; }
+    li { margin: 4px 0; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0 8px; font-size: 14px; }
+    th, td { border: 1px solid var(--border); padding: 10px 12px; vertical-align: top; }
+    th { background: #f2f4f7; text-align: left; }
+    code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: 0.92em; background: #eef2f7; padding: 2px 5px; border-radius: 5px; }
+    pre { overflow: auto; background: var(--code); color: #f8fafc; border-radius: 14px; padding: 18px; border: 1px solid #1f2937; line-height: 1.55; }
+    pre code { background: transparent; color: inherit; padding: 0; font-size: 13px; }
+    .note { border: 1px solid var(--border); background: #f8fafc; border-radius: 14px; padding: 14px 16px; color: #344054; margin: 14px 0; }
+    .warning { border: 1px solid var(--warn-border); background: var(--warn); border-radius: 14px; padding: 14px 16px; color: #7c2d12; margin: 14px 0; }
+    footer { color: var(--muted); margin-top: 28px; font-size: 14px; }
+    @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } aside { position: relative; height: auto; } aside nav { columns: 2; } main { padding: 28px 18px 72px; } .hero h2 { font-size: 34px; } }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h1>SatisfactionJS</h1>
+      <p>Documentation for v2.1.2.1229</p>
+      <nav>
+        <a href="#overview">Overview</a>
+        <a href="#install">Installation</a>
+        <a href="#quick-start">Quick start</a>
+        <a href="#init">Initialization</a>
+        <a href="#components">Components</a>
+        <a href="#component-api">Component API</a>
+        <a href="#routing">Routing</a>
+        <a href="#models">MVVM models</a>
+        <a href="#multiplier">Multipliers</a>
+        <a href="#points">Data exchange</a>
+        <a href="#state">State manager</a>
+        <a href="#resources">Resources</a>
+        <a href="#dependencies">Dependencies</a>
+        <a href="#styles">Styles</a>
+        <a href="#events">Events</a>
+        <a href="#config">Configuration</a>
+        <a href="#api">Global API</a>
+        <a href="#internal-api">Lower-level API</a>
+        <a href="#notes">Security and limitations</a>
+        <a href="#checklist">Production checklist</a>
+      </nav>
+    </aside>
+
+    <main>
+      <div class="hero" id="overview">
+        <h2>Browser-native MVVM components without a build step.</h2>
+        <p>SatisfactionJS loads HTML components, executes trusted component scripts, binds model properties, handles simple route-based navigation, shares data between components, and provides lightweight state/resources helpers.</p>
+        <div class="badge-row">
+          <span class="badge">Version 2.1.2.1229</span>
+          <span class="badge">No npm required</span>
+          <span class="badge">HTML components</span>
+          <span class="badge">MVVM bindings</span>
+          <span class="badge">Client-side routing</span>
+          <span class="badge">MIT License</span>
+        </div>
+      </div>
+
+      <section id="install">
+        <h2>Installation</h2>
+        <p>Copy the framework file into your project and include it before your application starts.</p>
+        <pre><code class="language-html">&lt;script src=&quot;/satisfaction.dev.js&quot;&gt;&lt;/script&gt;</code></pre>
+        <p>For production, use a minified build and, ideally, a versioned path.</p>
+        <pre><code class="language-html">&lt;script src=&quot;/versions/2.1.2.1229/satisfaction.min.js&quot;&gt;&lt;/script&gt;</code></pre>
+        <div class="note">SatisfactionJS is browser-only. It exposes global <code>sf_*</code> functions and does not use ES modules.</div>
+      </section>
+
+      <section id="quick-start">
+        <h2>Quick start</h2>
+        <p>This is the smallest routed app shell: routes, navigation buttons, a navigation switch, and two component templates.</p>
+        <pre><code class="language-html">&lt;!doctype html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+&lt;head&gt;
+  &lt;meta charset=&quot;utf-8&quot;&gt;
+  &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;
+  &lt;title&gt;SatisfactionJS App&lt;/title&gt;
+  &lt;script src=&quot;/satisfaction.dev.js&quot;&gt;&lt;/script&gt;
+&lt;/head&gt;
+&lt;body onload=&quot;sf_initialize()&quot; allow-routing&gt;
+  &lt;route path=&quot;/&quot; navigation-component-name=&quot;home&quot;&gt;&lt;/route&gt;
+  &lt;route path=&quot;/about&quot; navigation-component-name=&quot;about&quot;&gt;&lt;/route&gt;
+
+  &lt;nav&gt;
+    &lt;button navigation-component-name=&quot;home&quot;&gt;Home&lt;/button&gt;
+    &lt;button navigation-component-name=&quot;about&quot;&gt;About&lt;/button&gt;
+  &lt;/nav&gt;
+
+  &lt;main navigation-switch&gt;
+    &lt;component name=&quot;home&quot; src=&quot;/views/home.html&quot; default&gt;&lt;/component&gt;
+    &lt;component name=&quot;about&quot; src=&quot;/views/about.html&quot;&gt;&lt;/component&gt;
+  &lt;/main&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+        <h3>Example component file</h3>
+        <p><code>/views/home.html</code></p>
+        <pre><code class="language-html">&lt;script&gt;
+component.setModel({
+  title: &quot;Home&quot;,
+  count: 0,
+  increment: function () {
+    this.count.value++;
+  }
+}, &quot;home-model&quot;);
+&lt;/script&gt;
+
+&lt;section template=&quot;home-model&quot;&gt;
+  &lt;h1&gt;{{title}}&lt;/h1&gt;
+  &lt;p&gt;Count: &lt;span&gt;{{count}}&lt;/span&gt;&lt;/p&gt;
+  &lt;button command=&quot;{{increment}}&quot;&gt;Increment&lt;/button&gt;
+&lt;/section&gt;</code></pre>
+      </section>
+
+      <section id="init">
+        <h2>Initialization</h2>
+        <p>Call <code>sf_initialize()</code> when the page is ready. The simplest way is to use <code>body.onload</code>.</p>
+        <pre><code class="language-html">&lt;body onload=&quot;sf_initialize()&quot; allow-routing&gt;
+  ...
+&lt;/body&gt;</code></pre>
+        <p><code>allow-routing</code> enables route lookup and popstate handling. Without it, default components still load, but routes are not used.</p>
+        <p>You may pass a setup callback. It runs before resources and default components are loaded.</p>
+        <pre><code class="language-html">&lt;body onload=&quot;sf_initialize(function () {
+  sf_active_navigation_allowed = true;
+  sf_dependency_stable_version = &quot;2.1.2.1229&quot;;
+})&quot; allow-routing&gt;</code></pre>
+      </section>
+
+      <section id="components">
+        <h2>Components</h2>
+        <p>A component is declared with the custom <code>&lt;component&gt;</code> element. Its HTML is loaded from <code>src</code> using XHR and inserted into the component element.</p>
+        <pre><code class="language-html">&lt;component name=&quot;profile&quot; src=&quot;/views/profile.html&quot;&gt;&lt;/component&gt;</code></pre>
+        <table>
+          <thead><tr><th>Attribute</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>name</code></td><td>Component name used by loaders, navigation, and component-scoped state.</td></tr>
+            <tr><td><code>src</code></td><td>URL of the HTML template.</td></tr>
+            <tr><td><code>default</code></td><td>Loads automatically during initialization or when a parent component is loaded.</td></tr>
+            <tr><td><code>on</code></td><td>JavaScript condition evaluated with <code>eval</code>. The component loads when the condition is true.</td></tr>
+            <tr><td><code>lazy</code></td><td>Beta observer behavior after the component has been loaded.</td></tr>
+            <tr><td><code>frozen</code></td><td>Freezes the element size while unloading and unfreezes after loading.</td></tr>
+          </tbody>
+        </table>
+        <h3>Anonymous default components</h3>
+        <p>If a default or conditional component has no <code>name</code>, the framework assigns one based on the source filename and the element XPath hash.</p>
+        <pre><code class="language-html">&lt;component src=&quot;/views/banner.html&quot; default&gt;&lt;/component&gt;</code></pre>
+        <h3>Manual mounting</h3>
+        <p><code>sf_component_mount(containerElement, componentName, sourcePath)</code> creates and appends a component element and attaches a <code>load()</code> method.</p>
+        <pre><code class="language-javascript">const host = document.querySelector(&quot;#slot&quot;);
+const dialog = sf_component_mount(host, &quot;dialog&quot;, &quot;/views/dialog.html&quot;);
+dialog.load();</code></pre>
+      </section>
+
+      <section id="component-api">
+        <h2>Component object API</h2>
+        <p>After a component is prepared, the framework attaches helper methods directly to the component element.</p>
+        <table>
+          <thead><tr><th>Method/property</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td><code>component.name</code></td><td>Name copied from the <code>name</code> attribute.</td></tr>
+            <tr><td><code>component.inputData</code></td><td>Data passed through <code>load(..., inputData)</code> or navigation.</td></tr>
+            <tr><td><code>component.model</code></td><td>The model set by <code>setModel</code>.</td></tr>
+            <tr><td><code>find(name)</code></td><td>Returns the first descendant with matching <code>name</code>.</td></tr>
+            <tr><td><code>findClasses(className)</code></td><td>Returns descendants with the given class.</td></tr>
+            <tr><td><code>load(preloadSubcomponents = true, inputData = null)</code></td><td>Loads or reloads this component.</td></tr>
+            <tr><td><code>unload()</code></td><td>Dispatches unload, clears children, and dispatches cleared.</td></tr>
+            <tr><td><code>reload(preloadSubcomponents = true, inputData = null)</code></td><td>Unloads and loads the component.</td></tr>
+            <tr><td><code>hasLoaded()</code></td><td>Returns whether the component has the <code>loaded</code> attribute.</td></tr>
+            <tr><td><code>navigate(saveSearchParams = true, inputData = null)</code></td><td>Navigates to this component by name.</td></tr>
+            <tr><td><code>state(name)</code></td><td>Reads <code>component.&lt;componentName&gt;.&lt;name&gt;</code> state.</td></tr>
+            <tr><td><code>setState(name, value, setLocalStorage = false)</code></td><td>Writes component-scoped state.</td></tr>
+            <tr><td><code>parent()</code></td><td>Returns the closest parent component.</td></tr>
+            <tr><td><code>setModel(model, templateName)</code></td><td>Applies a model to elements with matching <code>template</code>.</td></tr>
+            <tr><td><code>setMultiplier(array, templateName, display = 'block')</code></td><td>Repeats a template for array items.</td></tr>
+            <tr><td><code>dispatch(eventName)</code></td><td>Dispatches an <code>sf</code>-prefixed event.</td></tr>
+            <tr><td><code>setEvent(eventName, handler)</code></td><td>Adds an <code>sf</code>-prefixed event listener.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="routing">
+        <h2>Routing and navigation</h2>
+        <p>Routing maps a browser path to a component name. It is active only when <code>body</code> has <code>allow-routing</code>.</p>
+        <pre><code class="language-html">&lt;route path=&quot;/&quot; navigation-component-name=&quot;home&quot;&gt;&lt;/route&gt;
+&lt;route path=&quot;/settings&quot; navigation-component-name=&quot;settings&quot;&gt;&lt;/route&gt;</code></pre>
+        <p>Any element with <code>navigation-component-name</code> becomes a click navigation trigger after components are set up.</p>
+        <pre><code class="language-html">&lt;button navigation-component-name=&quot;settings&quot;&gt;Settings&lt;/button&gt;</code></pre>
+        <p>Use <code>navigation-switch</code> when sibling components represent mutually exclusive screens.</p>
+        <pre><code class="language-html">&lt;main navigation-switch&gt;
+  &lt;component name=&quot;home&quot; src=&quot;/views/home.html&quot; default&gt;&lt;/component&gt;
+  &lt;component name=&quot;settings&quot; src=&quot;/views/settings.html&quot;&gt;&lt;/component&gt;
+&lt;/main&gt;</code></pre>
+        <h3>Active links</h3>
+        <p>Set <code>sf_active_navigation_allowed = true</code> to intercept internal links with the <code>active</code> attribute.</p>
+        <pre><code class="language-html">&lt;script&gt;sf_active_navigation_allowed = true;&lt;/script&gt;
+&lt;a active href=&quot;/settings&quot;&gt;Settings&lt;/a&gt;</code></pre>
+        <div class="note">Only links starting with <code>/</code> are handled. Links with <code>target</code> other than <code>_self</code> are ignored.</div>
+      </section>
+
+      <section id="models">
+        <h2>MVVM models</h2>
+        <p>Models are plain objects applied to elements with a matching <code>template</code> attribute.</p>
+        <pre><code class="language-javascript">component.setModel({
+  name: &quot;User&quot;,
+  message: &quot;Hello&quot;,
+  send: function (eventInfo) {
+    console.log(this.name.value, this.message.value);
+  }
+}, &quot;message-form&quot;);</code></pre>
+        <p>Every non-function field is converted into a property object. After the model is set, use <code>.value</code>, <code>.get()</code>, or <code>.set(value)</code>.</p>
+        <pre><code class="language-javascript">this.name.value = &quot;New name&quot;;
+this.message.set(&quot;Updated&quot;);
+const current = this.message.get();</code></pre>
+        <h3>Text and attributes</h3>
+        <pre><code class="language-html">&lt;h1&gt;{{name}}&lt;/h1&gt;
+&lt;input value=&quot;{{name}}&quot; bind=&quot;{{name}}&quot; bindEvent=&quot;input&quot;&gt;</code></pre>
+        <div class="warning">Current version rule: keep one model property per text node or attribute. Split combined text into separate spans to avoid stale placeholders.</div>
+        <pre><code class="language-html">&lt;p&gt;Count: &lt;span&gt;{{count}}&lt;/span&gt; / User: &lt;span&gt;{{name}}&lt;/span&gt;&lt;/p&gt;</code></pre>
+        <h3>Visibility</h3>
+        <pre><code class="language-html">&lt;p visible=&quot;{{isReady}}&quot;&gt;Ready&lt;/p&gt;
+&lt;p invisible=&quot;{{isLoading}}&quot;&gt;Not loading&lt;/p&gt;
+&lt;p when=&quot;{{count}} &gt; 3&quot;&gt;Count is greater than three&lt;/p&gt;
+&lt;p visible=&quot;{{isReady}}&quot; transparent&gt;Hidden with visibility, not display&lt;/p&gt;</code></pre>
+        <h3>Commands</h3>
+        <pre><code class="language-html">&lt;button command=&quot;{{save}}&quot;&gt;Save&lt;/button&gt;
+&lt;input command=&quot;{{search}}&quot; commandEvent=&quot;input&quot;&gt;</code></pre>
+        <p>The default command event is <code>click</code>. Commands receive an info object.</p>
+        <pre><code class="language-javascript">save: function (eventInfo) {
+  console.log(eventInfo.element);
+  console.log(eventInfo.commandEvent);
+  console.log(eventInfo.model);
+}</code></pre>
+        <h3>Bindings</h3>
+        <p>The default binding event is <code>change</code>. Use <code>bindEvent="input"</code> for live typing.</p>
+        <pre><code class="language-html">&lt;input value=&quot;{{email}}&quot; bind=&quot;{{email}}&quot; bindEvent=&quot;input&quot;&gt;</code></pre>
+        <h3>Construct hook</h3>
+        <p>A model function named <code>construct</code> runs after properties, commands, and bindings are connected.</p>
+        <pre><code class="language-javascript">component.setModel({
+  title: &quot;Hello&quot;,
+  construct: function (targetElement) {
+    console.log(&quot;Model is ready&quot;, targetElement);
+  }
+}, &quot;view&quot;);</code></pre>
+      </section>
+
+      <section id="multiplier">
+        <h2>Template multiplication</h2>
+        <p>Use <code>component.setMultiplier(array, templateName, display)</code> to clone a template for every model object in an array.</p>
+        <pre><code class="language-html">&lt;script&gt;
+const messages = [
+  { sender: &quot;Anna&quot;, text: &quot;Hello&quot; },
+  { sender: &quot;Mark&quot;, text: &quot;Hi&quot; }
+];
+component.setMultiplier(messages, &quot;message-item&quot;);
+&lt;/script&gt;
+
+&lt;div&gt;
+  &lt;article template=&quot;message-item&quot;&gt;
+    &lt;strong&gt;{{sender}}&lt;/strong&gt;
+    &lt;p&gt;{{text}}&lt;/p&gt;
+    &lt;button command=&quot;{{unset}}&quot;&gt;Remove&lt;/button&gt;
+  &lt;/article&gt;
+&lt;/div&gt;</code></pre>
+        <table>
+          <thead><tr><th>Added to item model</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>unset()</code></td><td>Removes the rendered item and splices it from the source array.</td></tr>
+            <tr><td><code>getIndex()</code></td><td>Returns the index captured when rendered.</td></tr>
+            <tr><td><code>getArray()</code></td><td>Returns the source array.</td></tr>
+          </tbody>
+        </table>
+        <table>
+          <thead><tr><th>Added to array</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>synchronize()</code></td><td>Rebuilds the rendered list from the current array.</td></tr>
+            <tr><td><code>values()</code></td><td>Returns a shallow copy.</td></tr>
+            <tr><td><code>push(...items)</code></td><td>Appends data and renders new items.</td></tr>
+            <tr><td><code>pop(index)</code></td><td>Removes the last data item; DOM removal uses the passed template index. Prefer <code>unset()</code> or <code>synchronize()</code> for non-last cases.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="points">
+        <h2>Data exchange with points</h2>
+        <p>A point is a small publish/subscribe object with <code>subscribe</code>, <code>unsubscribe</code>, and <code>share</code>.</p>
+        <pre><code class="language-javascript">const point = sf_point_set(&quot;messages&quot;);
+
+point.subscribe(&quot;message-list&quot;, function (message) {
+  console.log(message);
+});
+
+point.share({ text: &quot;Hello&quot; });
+
+const samePoint = sf_point_get(&quot;messages&quot;);</code></pre>
+        <p>Data can also be passed into a component through <code>inputData</code>.</p>
+        <pre><code class="language-javascript">component.find(&quot;message-list&quot;).load(true, point);
+
+// In the child component:
+const sharedPoint = component.inputData;</code></pre>
+      </section>
+
+      <section id="state">
+        <h2>State manager</h2>
+        <p>State is stored in memory and optionally in <code>localStorage</code>.</p>
+        <pre><code class="language-javascript">sf_state_set(&quot;token&quot;, &quot;abc&quot;, true);
+const token = sf_state_get(&quot;token&quot;);
+sf_state_unset(&quot;token&quot;);</code></pre>
+        <p>Component-scoped helpers automatically prefix the key with the component name.</p>
+        <pre><code class="language-javascript">component.setState(&quot;tab&quot;, &quot;profile&quot;, true);
+const tab = component.state(&quot;tab&quot;);
+// internal key: component.&lt;componentName&gt;.tab</code></pre>
+        <div class="note"><code>localStorage</code> values are strings. Serialize objects manually with <code>JSON.stringify</code> and parse them with <code>JSON.parse</code>.</div>
+      </section>
+
+      <section id="resources">
+        <h2>Resources</h2>
+        <p>Resources are JSON dictionaries loaded before default components. Placeholders are replaced in component HTML before it is inserted.</p>
+        <pre><code class="language-html">&lt;resource name=&quot;App&quot; src=&quot;/resources/en.json&quot;&gt;&lt;/resource&gt;</code></pre>
+        <pre><code class="language-json">{
+  &quot;Home.Title&quot;: &quot;Home&quot;,
+  &quot;Home.Subtitle&quot;: &quot;Welcome&quot;
+}</code></pre>
+        <pre><code class="language-html">&lt;h1&gt;##Resource.App.Home.Title##&lt;/h1&gt;</code></pre>
+        <div class="note">Dots in resource keys are literal key names. <code>Home.Title</code> means a JSON key named <code>Home.Title</code>, not a nested object lookup.</div>
+        <h3>Conditional resources</h3>
+        <pre><code class="language-html">&lt;resource name=&quot;App&quot; src=&quot;/resources/lt.json&quot; on=&quot;navigator.language.startsWith(&#x27;lt&#x27;)&quot;&gt;&lt;/resource&gt;</code></pre>
+        <h3>Resource settings</h3>
+        <pre><code class="language-javascript">sf_resource_undefined_key_value = &quot;&quot;;
+sf_resource_callback_after = function () {
+  console.log(&quot;Resources and default components are ready&quot;);
+};</code></pre>
+      </section>
+
+      <section id="dependencies">
+        <h2>Dependencies</h2>
+        <p><code>sf_dependency_set(source, cacheAllowed)</code> appends JavaScript or CSS to the document head.</p>
+        <pre><code class="language-javascript">sf_dependency_set(&quot;/lib/app.js&quot;, false);
+sf_dependency_set(&quot;/styles/app.css&quot;, true);</code></pre>
+        <p>When cache is not allowed, a <code>version-timestamp</code> query parameter is added.</p>
+        <pre><code class="language-javascript">sf_dependency_stable_version = &quot;2.1.2.1229&quot;;
+sf_dependency_set(&quot;/lib/app.js&quot;, false);</code></pre>
+        <div class="warning">This function does not return a Promise and does not wait for scripts to finish loading. Use a Promise-based loader if application startup must block on dependencies.</div>
+      </section>
+
+      <section id="styles">
+        <h2>Component styles</h2>
+        <p>Non-global component styles are scoped by rewriting class selectors with a random postfix and applying the matching postfix classes to elements inside the component.</p>
+        <pre><code class="language-html">&lt;style&gt;
+.card { padding: 16px; }
+&lt;/style&gt;
+
+&lt;div class=&quot;card&quot;&gt;Content&lt;/div&gt;</code></pre>
+        <p>Use <code>global</code> to skip this rewriting.</p>
+        <pre><code class="language-html">&lt;style global&gt;
+body { margin: 0; }
+&lt;/style&gt;</code></pre>
+        <div class="note">Scoping is class-selector based. Keep component CSS simple and test complex selectors carefully.</div>
+      </section>
+
+      <section id="events">
+        <h2>Events</h2>
+        <p>Framework events are dispatched as DOM events with the prefix <code>sf</code>.</p>
+        <table>
+          <thead><tr><th>Constant</th><th>DOM event</th><th>Trigger</th></tr></thead>
+          <tbody>
+            <tr><td><code>SF_EVENT_MODEL_SET</code></td><td><code>sfmodelset</code></td><td>Model applied.</td></tr>
+            <tr><td><code>SF_EVENT_ROUTING_ROUTE_FOUND</code></td><td><code>sfroutefound</code></td><td>Route found.</td></tr>
+            <tr><td><code>SF_EVENT_ROUTING_ROUTE_NOT_FOUND</code></td><td><code>sfroutenotfound</code></td><td>Route not found.</td></tr>
+            <tr><td><code>SF_EVENT_COMPONENT_LOAD</code></td><td><code>sfload</code></td><td>Component content is set.</td></tr>
+            <tr><td><code>SF_EVENT_COMPONENT_UNLOAD</code></td><td><code>sfunload</code></td><td>Component unload starts.</td></tr>
+            <tr><td><code>SF_EVENT_COMPONENT_ERROR</code></td><td><code>sferror</code></td><td>Component XHR error.</td></tr>
+            <tr><td><code>SF_EVENT_COMPONENT_CLEARED</code></td><td><code>sfcleared</code></td><td>Component children are removed.</td></tr>
+            <tr><td><code>SF_EVENT_COMPONENT_NAVIGATION_IN</code></td><td><code>sfnavigationin</code></td><td>Component navigated into.</td></tr>
+            <tr><td><code>SF_EVENT_COMPONENT_NAVIGATION_OUT</code></td><td><code>sfnavigationout</code></td><td>Component navigated away from.</td></tr>
+            <tr><td><code>SF_EVENT_COMPONENT_RENDER</code></td><td><code>sfrender</code></td><td>Component render is considered ready.</td></tr>
+            <tr><td><code>SF_EVENT_COMPONENT_FINALIZED</code></td><td><code>sffinalized</code></td><td>Requested component load chain is finished.</td></tr>
+          </tbody>
+        </table>
+        <pre><code class="language-javascript">component.setEvent(SF_EVENT_COMPONENT_RENDER, function () {
+  console.log(&quot;Rendered&quot;);
+});
+
+component.addEventListener(&quot;sfrender&quot;, function () {});
+
+component.dispatch(&quot;custom&quot;); // dispatches &quot;sfcustom&quot;</code></pre>
+      </section>
+
+      <section id="config">
+        <h2>Configuration variables</h2>
+        <table>
+          <thead><tr><th>Variable</th><th>Default</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>sf_component_javascript_allowed</code></td><td><code>true</code></td><td>Executes scripts inside loaded components.</td></tr>
+            <tr><td><code>sf_component_javascript_builtin</code></td><td><code>true</code></td><td>Keeps component script tags in DOM after execution.</td></tr>
+            <tr><td><code>sf_component_style_add_new_class</code></td><td><code>true</code></td><td>Keeps original class names and adds scoped classes.</td></tr>
+            <tr><td><code>sf_component_lazy_loading_allowed</code></td><td><code>true</code></td><td>Enables beta lazy observer setup for loaded lazy components.</td></tr>
+            <tr><td><code>sf_component_loading_indicator</code></td><td><code>null</code></td><td>HTML displayed while a component is loading.</td></tr>
+            <tr><td><code>sf_component_templates</code></td><td><code>{}</code></td><td>In-memory cache of loaded component HTML by source URL.</td></tr>
+            <tr><td><code>sf_component_cache_control_header</code></td><td><code>no-cache, no-store, max-age=0</code></td><td>Header sent with component XHR.</td></tr>
+            <tr><td><code>sf_routing_allowed</code></td><td><code>false</code></td><td>Set during initialization from <code>body[allow-routing]</code>.</td></tr>
+            <tr><td><code>sf_active_navigation_allowed</code></td><td><code>false</code></td><td>Enables internal active-link interception.</td></tr>
+            <tr><td><code>sf_disable_pop_state</code></td><td><code>false</code></td><td>Prevents back navigation routing by pushing a new history state.</td></tr>
+            <tr><td><code>sf_model_multiplier_default_functions_allowed</code></td><td><code>true</code></td><td>Adds helper functions to multiplier item models.</td></tr>
+            <tr><td><code>sf_state_ls_prefix</code></td><td><code>sf_</code></td><td>Prefix for localStorage state keys.</td></tr>
+            <tr><td><code>sf_resource_allowed</code></td><td><code>true</code></td><td>Enables resource loading and replacement.</td></tr>
+            <tr><td><code>sf_resource_undefined_key_value</code></td><td><code>""</code></td><td>Value used when a resource key is missing.</td></tr>
+            <tr><td><code>sf_resource_callback_after</code></td><td><code>null</code></td><td>Callback after resources and default components are ready.</td></tr>
+            <tr><td><code>sf_resource_cache_control_header</code></td><td><code>no-cache, no-store, max-age=0</code></td><td>Header sent with resource XHR.</td></tr>
+            <tr><td><code>sf_event_prefix</code></td><td><code>sf</code></td><td>Prefix for framework DOM events.</td></tr>
+            <tr><td><code>sf_dependency_stable_version</code></td><td><code>null</code></td><td>Stable cache-busting value for dependencies.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="api">
+        <h2>Global API reference</h2>
+        <table>
+          <thead><tr><th>Function</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td><code>sf_initialize(callbackSetup = null)</code></td><td>Initializes resources, default components, routing flag, and popstate handling.</td></tr>
+            <tr><td><code>sf_component_mount(containerElement, componentName, sourcePath)</code></td><td>Creates and appends a component element.</td></tr>
+            <tr><td><code>sf_component_load(componentNames, preloadSubcomponents = true, inputData = null, scopedElement = document.body)</code></td><td>Loads one or more components by name.</td></tr>
+            <tr><td><code>sf_component_unload(componentName, scopedElement = document.body)</code></td><td>Unloads components by name.</td></tr>
+            <tr><td><code>sf_component_navigate(componentName, saveSearchParams = true, inputData = null, scopedElement = document.body)</code></td><td>Loads/navigates to a component and updates routing when enabled.</td></tr>
+            <tr><td><code>sf_routing_find_navigation_route(containerElement = document, path = window.location.pathname)</code></td><td>Finds a route for a path and navigates to its component.</td></tr>
+            <tr><td><code>sf_routing_set_route_path(componentName, saveSearchParams = true)</code></td><td>Pushes the matching route path into browser history.</td></tr>
+            <tr><td><code>sf_property_set(defaultValue, raiseCallback = null)</code></td><td>Creates a reactive property object.</td></tr>
+            <tr><td><code>sf_model_set(targetElement, model)</code></td><td>Applies model tracking directly to an element.</td></tr>
+            <tr><td><code>sf_model_set_multiplier(templateElement, array, display = 'block')</code></td><td>Renders repeated template items from an array.</td></tr>
+            <tr><td><code>sf_point_set(name = null)</code></td><td>Creates a shared point.</td></tr>
+            <tr><td><code>sf_point_get(name)</code></td><td>Gets a named shared point.</td></tr>
+            <tr><td><code>sf_state_get(name)</code></td><td>Gets state.</td></tr>
+            <tr><td><code>sf_state_set(name, value, setLocalStorage = false)</code></td><td>Sets state.</td></tr>
+            <tr><td><code>sf_state_unset(name)</code></td><td>Removes state.</td></tr>
+            <tr><td><code>sf_resource_get(dictionaryNameKey, internalResourceKey, defaultValue = null)</code></td><td>Reads a loaded resource value.</td></tr>
+            <tr><td><code>sf_event_set(element, eventName, handler)</code></td><td>Adds a prefixed event listener.</td></tr>
+            <tr><td><code>sf_event_dispatch(element, eventName, bubbles = true, cancelable = false)</code></td><td>Dispatches a prefixed event.</td></tr>
+            <tr><td><code>sf_dependency_set(source, cacheAllowed = false)</code></td><td>Appends JS or CSS dependency.</td></tr>
+            <tr><td><code>sf_random_string()</code></td><td>Returns a random string.</td></tr>
+            <tr><td><code>sf_sleep(milliseconds)</code></td><td>Blocking busy-wait sleep.</td></tr>
+            <tr><td><code>sf_xpath_find(targetElement, xpathExpression)</code></td><td>Evaluates XPath.</td></tr>
+            <tr><td><code>sf_xpath_element(element)</code></td><td>Builds an XPath-like path.</td></tr>
+            <tr><td><code>sf_hash(text)</code></td><td>Returns a base-36 hash.</td></tr>
+            <tr><td><code>sf_element_freeze(element, display = 'block')</code></td><td>Freezes element size.</td></tr>
+            <tr><td><code>sf_element_unfreeze(element, display = '')</code></td><td>Unfreezes element size.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+
+      <section id="internal-api">
+        <h2>Lower-level exposed functions</h2>
+        <p>These functions are also global because the framework is not packaged as a module. They are mainly used internally by SatisfactionJS. Use them only when you intentionally need to extend or debug the framework.</p>
+        <table>
+          <thead><tr><th>Function</th><th>Internal role</th></tr></thead>
+          <tbody>
+            <tr><td><code>sf_component_setup()</code></td><td>Starts default component loading from <code>document.body</code>.</td></tr>
+            <tr><td><code>sf_component_load_default(targetElement)</code></td><td>Finds <code>component[default]</code> and <code>component[on]</code> inside a target and loads them.</td></tr>
+            <tr><td><code>sf_component_claim_anonymous(componentElements)</code></td><td>Assigns generated names to unnamed default/conditional components.</td></tr>
+            <tr><td><code>sf_component_set(componentElement, content, sharedInputData = null)</code></td><td>Inserts component HTML and applies defaults, styles, scripts, events, routing, and lazy/frozen handling.</td></tr>
+            <tr><td><code>sf_component_set_lazy_loading(componentElement, thresholdValue = 0)</code></td><td>Attaches the beta IntersectionObserver lazy behavior.</td></tr>
+            <tr><td><code>sf_component_replace_resources_data(content)</code></td><td>Replaces resource placeholders in component HTML.</td></tr>
+            <tr><td><code>sf_component_set_defaults(componentElement)</code></td><td>Attaches the component helper API to an element.</td></tr>
+            <tr><td><code>sf_component_track_navigation(targetElement = null)</code></td><td>Connects click handlers for elements with <code>navigation-component-name</code>; pass an explicit target element.</td></tr>
+            <tr><td><code>sf_component_execute_js(componentElement)</code></td><td>Executes script content inside a loaded component.</td></tr>
+            <tr><td><code>sf_component_apply_styles(targetElement)</code></td><td>Rewrites non-global component style classes and applies scoped classes.</td></tr>
+            <tr><td><code>sf_patch_active_links(targetElement)</code></td><td>Connects intercepted routing behavior for active internal links.</td></tr>
+            <tr><td><code>sf_model_track_properties(targetElement, model)</code></td><td>Converts model values into reactive property objects.</td></tr>
+            <tr><td><code>sf_model_find_properties(targetElement)</code></td><td>Marks text and attribute templates before model updates.</td></tr>
+            <tr><td><code>sf_model_update_property(targetElement, bindableKey, value)</code></td><td>Updates DOM text/attributes for a changed property.</td></tr>
+            <tr><td><code>sf_model_update_visibility(targetElement, value)</code></td><td>Applies display/visibility behavior for visibility attributes.</td></tr>
+            <tr><td><code>sf_model_track_commands(targetElement, model)</code></td><td>Connects command attributes to model functions.</td></tr>
+            <tr><td><code>sf_model_set_command_listener(targetElement, model, callbackFunction)</code></td><td>Adds a command event listener to one element.</td></tr>
+            <tr><td><code>sf_model_track_bindings(targetElement, model)</code></td><td>Connects bind attributes to model properties.</td></tr>
+            <tr><td><code>sf_model_set_binding_listener(targetElement, model, property)</code></td><td>Adds a binding event listener to one element.</td></tr>
+            <tr><td><code>sf_model_unset_multiplier_template(targetElement, arrayIndex)</code></td><td>Removes rendered multiplier clones by index attribute.</td></tr>
+            <tr><td><code>sf_model_set_multiplier_model(templateElement, model)</code></td><td>Applies a model to a cloned multiplier item.</td></tr>
+            <tr><td><code>sf_model_set_multiplier_template_clone(templateElement, index, display)</code></td><td>Clones a multiplier template and assigns a generated template name.</td></tr>
+            <tr><td><code>sf_model_set_multiplier_reset(targetElement)</code></td><td>Removes existing multiplier clones.</td></tr>
+            <tr><td><code>sf_resource_load_all(callback)</code></td><td>Loads all resource JSON dictionaries and then runs the callback.</td></tr>
+            <tr><td><code>sf_dependency_set_script(finalSource)</code></td><td>Appends a script dependency to <code>document.head</code>.</td></tr>
+            <tr><td><code>sf_dependency_set_stylesheet(finalSource)</code></td><td>Appends a stylesheet dependency to <code>document.head</code>.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="notes">
+        <h2>Security and current-version limitations</h2>
+        <ul>
+          <li>Use trusted component HTML only. Component scripts are executed with <code>new Function</code>.</li>
+          <li><code>on</code> and <code>when</code> expressions are evaluated as JavaScript.</li>
+          <li>A strict Content Security Policy may block this execution model.</li>
+          <li>Components and resources are loaded with XHR; use HTTP(S), not <code>file://</code>.</li>
+          <li>Cross-origin component/resource files require CORS headers from the server.</li>
+          <li>Multiple different <code>{{property}}</code> placeholders in the same text node or attribute are not reliable in this version.</li>
+          <li>The dependency helper appends scripts/styles but does not wait for them.</li>
+          <li><code>localStorage</code> state values are strings.</li>
+          <li><code>sfrender</code> is dispatched immediately only when there are no images or all images are already complete at the check time.</li>
+          <li>Keep component names unique when routing and using <code>navigation-switch</code>.</li>
+        </ul>
+      </section>
+
+      <section id="checklist">
+        <h2>Production checklist</h2>
+        <ul>
+          <li>Use a minified production file, for example <code>satisfaction.min.js</code>.</li>
+          <li>Publish builds under a versioned path, for example <code>/versions/2.1.2.1229/satisfaction.min.js</code>.</li>
+          <li>Serve JavaScript with the correct MIME type.</li>
+          <li>Set CORS deliberately. <code>Access-Control-Allow-Origin: *</code> is acceptable only for public static framework files.</li>
+          <li>Make sure routed paths return the same app shell on the server.</li>
+          <li>Keep component templates, resource JSON, and dependency paths reachable from the deployed origin.</li>
+          <li>Test direct page refreshes on every route.</li>
+        </ul>
+      </section>
+
+      <footer>Documentation prepared for SatisfactionJS 2.1.2.1229. Generated from the public <code>satisfaction.dev.js</code> API surface.</footer>
+    </main>
+  </div>
+</body>
+</html>
