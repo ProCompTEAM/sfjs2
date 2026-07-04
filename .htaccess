@@ -1,5 +1,94 @@
-DirectoryIndex index.html
+# ==========================================================
+# SatisfactionJS static documentation / public JS hosting
+# Cloudways / Apache-compatible .htaccess
+# ==========================================================
+
+# Use index.html as the default index file.
+# If index.html exists, it will be used before index.php.
+DirectoryIndex index.html index.php
+
+
+# ----------------------------------------------------------
+# Basic security
+# ----------------------------------------------------------
+
+# Disable directory listing.
+Options -Indexes
+
+# Do not expose .htaccess and hidden files.
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+
+# ----------------------------------------------------------
+# MIME types
+# ----------------------------------------------------------
+
+AddType text/html .html
+AddType text/css .css
+AddType application/javascript .js
+AddType application/json .json
+AddType image/svg+xml .svg
+
+
+# ----------------------------------------------------------
+# CORS for public JavaScript files
+# ----------------------------------------------------------
+# This allows your JS files to be loaded from other websites.
+# Useful for:
+# https://your-domain.com/versions/2.1.2.1229/satisfaction.min.js
+
+<IfModule mod_headers.c>
+    <FilesMatch "\.(js|mjs|css|json|svg)$">
+        Header always set Access-Control-Allow-Origin "*"
+        Header always set Access-Control-Allow-Methods "GET, OPTIONS"
+        Header always set Access-Control-Allow-Headers "Origin, Content-Type, Accept"
+    </FilesMatch>
+</IfModule>
+
+
+# ----------------------------------------------------------
+# Cache rules
+# ----------------------------------------------------------
+
+<IfModule mod_headers.c>
+
+    # Do not aggressively cache the root documentation page.
+    <FilesMatch "^index\.html$">
+        Header always set Cache-Control "no-cache, no-store, must-revalidate"
+        Header always set Pragma "no-cache"
+        Header always set Expires "0"
+    </FilesMatch>
+
+    # Versioned production files can be cached longer.
+    <FilesMatch "\.(js|mjs|css|svg|png|jpg|jpeg|gif|webp|ico)$">
+        Header always set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+
+</IfModule>
+
+
+# ----------------------------------------------------------
+# Rewrite rules
+# ----------------------------------------------------------
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
+
+    # Force the site root "/" to index.html.
+    RewriteRule ^$ index.html [L]
+
+    # If the requested path is a real file, serve it normally.
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+
+    # If the requested path is a real directory, serve it normally.
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Optional fallback:
+    # Any non-existing route goes to index.html.
+    # This is useful if your documentation/app uses client-side routing.
+    RewriteRule . index.html [L]
 </IfModule>
