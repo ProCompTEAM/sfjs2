@@ -9,7 +9,7 @@
     DEPARTMENT -> GENERAL CONSTANTS
 */
 
-const SF_PUBLIC_VERSION = "2.1.2.1229";
+const SF_PUBLIC_VERSION = "2.1.3.711";
 
 
 /*
@@ -1019,7 +1019,7 @@ function sf_model_set_multiplier_reset(targetElement) {
  * @returns {Object} The shared point object with subscribe, unsubscribe, and share methods.
  */
 function sf_point_get(name) {
-    return sf_point_shared_objects[name];
+    return sf_point_shared_objects[name] ?? sf_point_set(name);
 }
 
 /**
@@ -1029,21 +1029,28 @@ function sf_point_get(name) {
  */
 function sf_point_set(name = null) {
     const point = {
-        _subscriptions: [],
+        _subscriptions: new Map(),
 
         subscribe(keyContext, callback) {
-            this._subscriptions[keyContext] = {callback, keyContext};
+            this._subscriptions.set(keyContext, { callback, keyContext });
+            return this;
         },
+
         unsubscribe(keyContext) {
-            delete this._subscriptions[keyContext];
+            this._subscriptions.delete(keyContext);
+            return this;
         },
+
         share(data) {
-            Object.values(this._subscriptions)
-                .forEach(({callback, keyContext}) => callback.call(keyContext, data));
+            this._subscriptions.forEach(({ callback, keyContext }) => {
+                callback.call(keyContext, data);
+            });
+
+            return this;
         }
     };
 
-    if(name) {
+    if (name) {
         sf_point_shared_objects[name] = point;
     }
 
