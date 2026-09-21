@@ -9,7 +9,7 @@
     DEPARTMENT -> GENERAL CONSTANTS
 */
 
-const SF_PUBLIC_VERSION = "2.1.3.711";
+const SF_PUBLIC_VERSION = "2.1.3.921";
 
 
 /*
@@ -476,9 +476,10 @@ function sf_component_track_navigation(targetElement = null) {
  * @param {boolean} saveSearchParams - Whether to save search parameters in the URL or not. Default is true.
  * @param {*} [sharedInputData=null] - Shared object from another place.
  * @param {HTMLElement} [scopedElement=document.body] - The target element of current scope for search.
+ * @param {boolean} setRoutePath - Whether to update the browser URL after navigation. Default is true.
 * @return {void}
  */
-function sf_component_navigate(componentName, saveSearchParams = true, sharedInputData = null, scopedElement = document.body) {
+function sf_component_navigate(componentName, saveSearchParams = true, sharedInputData = null, scopedElement = document.body, setRoutePath = true) {
     const finalComponentElement = sf_component_load([componentName], true, sharedInputData ?? null);
 
     if(finalComponentElement) {
@@ -503,7 +504,7 @@ function sf_component_navigate(componentName, saveSearchParams = true, sharedInp
         }
     );
 
-    if(sf_routing_allowed) {
+    if(sf_routing_allowed && setRoutePath) {
         sf_routing_set_route_path(componentName, saveSearchParams);
     }
 }
@@ -560,15 +561,62 @@ function sf_component_apply_styles(targetElement) {
 */
 
 /**
+ * Check whether a route path matches the current path.
+ * @param {string} routePath - Exact route path or a path containing wildcard characters.
+ * @param {string} currentPath - Current browser path.
+ * @return {boolean}
+ */
+function sf_routing_path_matches(routePath, currentPath) {
+    if(routePath === currentPath) {
+        return true;
+    }
+
+    if(routePath.endsWith("/*")) {
+        const basePath = routePath.slice(0, -2);
+        return currentPath === basePath || currentPath.startsWith(basePath + "/");
+    }
+
+    if(!routePath.includes("*")) {
+        return false;
+    }
+
+    const escapedRoutePath = routePath
+        .split("*")
+        .map(routePart => routePart.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+        .join(".*");
+
+    return new RegExp(`^${escapedRoutePath}$`).test(currentPath);
+}
+
+/**
  * Find and navigate to a component that route based on the current path or a specified path template.
  * @return {boolean}
  */
 function sf_routing_find_navigation_route(containerElement = document, path = window.location.pathname) {
-    const routeElement = containerElement.querySelector('route[path="' + path + '"]');
+    let routeElement = null;
+    let routeSpecificity = -1;
+
+    for(const candidateRouteElement of containerElement.querySelectorAll("route[path]")) {
+        const routePath = candidateRouteElement.getAttribute("path");
+
+        if(routePath === path) {
+            routeElement = candidateRouteElement;
+            break;
+        }
+
+        if(sf_routing_path_matches(routePath, path)) {
+            const candidateSpecificity = routePath.split("*").join("").length;
+            if(candidateSpecificity > routeSpecificity) {
+                routeElement = candidateRouteElement;
+                routeSpecificity = candidateSpecificity;
+            }
+        }
+    }
+
     if (routeElement) {
         sf_event_dispatch(containerElement, SF_EVENT_ROUTING_ROUTE_FOUND, true);
         const componentName = routeElement.getAttribute("navigation-component-name");
-        sf_component_navigate(componentName);
+        sf_component_navigate(componentName, true, null, document.body, false);
         return true;
     } else {
         sf_event_dispatch(containerElement, SF_EVENT_ROUTING_ROUTE_NOT_FOUND, true);
@@ -584,8 +632,14 @@ function sf_routing_find_navigation_route(containerElement = document, path = wi
  */
 function sf_routing_set_route_path(componentName, saveSearchParams = true) {
     document.querySelectorAll(`route[navigation-component-name="${componentName}"]`).forEach(routeElement => {
+        const routePath = routeElement.getAttribute("path");
+
+        if(routePath.includes("*")) {
+            return;
+        }
+
         const currentURL = new URL(window.location.href);
-        currentURL.pathname = routeElement.getAttribute("path");
+        currentURL.pathname = routePath;
 
         if(!saveSearchParams) {
             currentURL.search = "";
@@ -623,10 +677,13 @@ function sf_patch_active_links(targetElement) {
             if (newUrl.pathname === location.pathname) {
                 window.location.href = newUrl;
             } else {
-                window.history.replaceState({ path: refreshUrl }, '', refreshUrl);
                 const isNavigated = sf_routing_find_navigation_route(document, newUrl.pathname);
 
-                if(!isNavigated) {
+                if(isNavigated) {
+                    const previousURL = window.location.href;
+                    window.history.pushState({ previousURL }, '', newUrl.href);
+                } else {
+                    window.history.replaceState({ path: refreshUrl }, '', refreshUrl);
                     window.location.href = newUrl;
                 }
             }

@@ -182,6 +182,14 @@ Use `navigation-switch` on a parent when only one child component should be visi
 </div>
 ```
 
+Wildcard route paths can match multiple child paths:
+
+```html
+<route path="/marketplace/board/*" navigation-component-name="marketplace-board"></route>
+```
+
+Exact routes take priority over wildcard routes, and the most specific wildcard wins when multiple templates match. A trailing `/*` matches both the base path and its descendants. Wildcard paths are matching templates only; navigating to a component does not write a path containing `*` into the browser URL.
+
 ## Active links
 
 If `sf_active_navigation_allowed = true`, SatisfactionJS intercepts internal links with the `active` attribute.
